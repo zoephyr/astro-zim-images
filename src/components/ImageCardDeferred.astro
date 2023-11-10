@@ -1,0 +1,125 @@
+---
+import Spinner from "./Spinner.astro";
+import { Image } from "astro:assets";
+
+interface Props {
+  title: string;
+  imagePath: string;
+  description: string;
+}
+
+const { title, imagePath, description } = Astro.props;
+
+// USE THIS for your S3 compatible bucket
+// TODO: Note, you should be caching this at a CDN to avoid blowing through your bandwidth!!!
+// const bucketSlug = import.meta.env.BACKBLAZE_BUCKET_SLUG;
+
+// USE THIS if you want to just use IMGUR for now
+const bucketSlug = import.meta.env.IMGUR_URL;
+---
+
+<>
+  <suspense-with-spinner
+    data-bucket-slug={bucketSlug}
+    data-image-path={imagePath}
+    data-title={title}
+    data-description={description}
+  >
+    <div class="spinner-div" id="spinner">
+      <Spinner />
+    </div>
+    <div class="image-card" id="image-card">
+      <h2 class="title">{title}</h2>
+      <p class="message">{description}</p>
+      <Image
+        loading="eager"
+        class="image-item"
+        title={title}
+        alt={description}
+        width={500}
+        height={500}
+        src={bucketSlug + imagePath}
+      />
+      <!--<GalleryImage client:visible /> -->
+    </div>
+  </suspense-with-spinner>
+  <style>
+    .spinner-div {
+      display: block;
+      margin: 16px;
+      margin-top: 150px;
+      padding: 16px;
+    }
+    .image-card {
+      display: none;
+      margin: 8px;
+      padding: 8px;
+      background-color: white;
+      background-image: var(--accent-gradient);
+      background-size: 400%;
+      border-radius: 0.5rem;
+      box-shadow:
+        0 5px 8px -1px rgba(100, 255, 100, 0.15),
+        0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    }
+    .title {
+      color: #222;
+      font-weight: bold
+    }
+    .message {
+      margin-top: 8px;
+      color: #444;
+    }
+  </style>
+
+  <script is:inline>
+    class SuspenseWithSpinner extends HTMLElement {
+      constructor() {
+        super();
+
+        // Handler
+        function onImageLoad() {
+          
+          // This is technically not needed, but... we ball
+          const message = document.querySelector(".message")
+          message.textContent = `Loaded content: ${message.textContent}`;
+          
+          const image = document.querySelector(".image-item");
+          const spinner = document.querySelector(".spinner-div");
+          const card = document.querySelector(".image-card");
+
+          spinner.style.display = "none";
+          card.style.display = "block";
+          image.style.display = "inline";
+        }
+
+        // Setup work for the
+        this.querySelector(".image-card").style.display = "none";
+        this.querySelector(".spinner-div").style.display = "inline";
+
+        // Read the data attributes
+        const title = this.dataset.title;
+        const description = this.dataset.description;
+        const imagePath = this.dataset.imagePath;
+        const bucketSlug = this.dataset.bucketSlug;
+        const fullImageURL = `${bucketSlug}${imagePath}`;
+
+        // Dev --
+        // console.log(`Title is: ${title}`);
+        // console.log(`Description is: ${description}`);
+        // console.log(`ImagePath is: ${imagePath}`);
+        // console.log(`Bucket Slug is: ${bucketSlug}`);
+        // console.log(`FULL-IMAGE-URL: ${fullImageURL}`);
+
+        // Reference the Image element
+        const imageItem = this.querySelector(".image-item");
+
+        // Subscribe to the event that fires on image load
+        imageItem.addEventListener("load", onImageLoad);
+      }
+    }
+
+    customElements.define("suspense-with-spinner", SuspenseWithSpinner);
+  </script>
+
+</>
