@@ -16,6 +16,6 @@ export default defineConfig({
     // Setup S3 / B2 bucket for image optimizations
     //domains: [bucketSlug],
     remotePatterns: [{protocol: "https" }],
-    domains: [imgurURL]
+    //domains: [imgurURL]
   }
 });
